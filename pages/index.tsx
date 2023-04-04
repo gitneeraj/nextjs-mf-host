@@ -1,11 +1,13 @@
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
+import { NextPageContext } from 'next';
 
 const RemoteApp = dynamic(() => import('remote1/pages/index'), {
   ssr: true
 }) as any;
+const page = import('remote1/pages/index');
 
-export default function Home() {
+export default function Home(props) {
   return (
     <>
       <Head>
@@ -16,8 +18,19 @@ export default function Home() {
       </Head>
       <main>
         <h1>Host App</h1>
-        <RemoteApp />
+        <RemoteApp {...props} />
       </main>
     </>
   );
+}
+export async function getServerSideProps(context: NextPageContext) {
+  const fedPage = await page;
+  console.log(fedPage.getServerSideProps);
+  if (fedPage.getServerSideProps) {
+    console.log('asfasdfdsf');
+    return fedPage.getServerSideProps(context);
+  }
+  return {
+    props: {} // will be passed to the page component as props
+  };
 }

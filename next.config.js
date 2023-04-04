@@ -1,5 +1,10 @@
 const { NextFederationPlugin } = require('@module-federation/nextjs-mf');
 
+// from https://github.com/module-federation/universe/tree/fix_gssp
+// const {
+//   NextFederationPlugin
+// } = require('../../universe/dist/packages/nextjs-mf/src/index');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
