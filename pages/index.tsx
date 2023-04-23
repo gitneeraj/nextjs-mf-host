@@ -27,7 +27,6 @@ export async function getServerSideProps(context: NextPageContext) {
   const fedPage = await page;
   console.log(fedPage.getServerSideProps);
   if (fedPage.getServerSideProps) {
-    console.log('asfasdfdsf');
     return fedPage.getServerSideProps(context);
   }
   return {

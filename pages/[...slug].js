@@ -1,27 +1,59 @@
-import { createFederatedCatchAll } from '@/components/shared';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { injectScript } from '@module-federation/utilities';
+import { matchFederatedPage } from '@/components/shared';
 
-export default createFederatedCatchAll();
+async function getRemoteModule(remote, mod) {
+  if (!remote || !mod) return null;
 
-// import dynamic from 'next/dynamic';
-// const page = import('remote1/pages/contact');
-// const Page = dynamic(() => import('remote1/pages/contact'));
-//
-// // Page.getInitialProps = async ctx => {
-// //   const getInitialProps = (await page).default?.getInitialProps;
-// //   console.log(getInitialProps(ctx));
-// //   if (getInitialProps) {
-// //     return getInitialProps(ctx);
-// //   }
-// //   return {};
-// // };
-// export async function getServerSideProps(context) {
-//   const fedPage = await page;
-//   console.log('slug', fedPage);
-//   if (fedPage.getServerSideProps) {
-//     return fedPage.getServerSideProps(context);
-//   }
-//   return {
-//     props: {} // will be passed to the page component as props
-//   };
-// }
-// export default Page;
+  return injectScript(remote).then(container => {
+    return container.get(mod).then(factory => {
+      return factory();
+    });
+  });
+}
+
+async function getMatchedPage(route) {
+  const matchedPage = await matchFederatedPage(route);
+  const remote = matchedPage?.value?.remote;
+  const mod = matchedPage?.value?.module;
+  return { remote, mod };
+}
+
+export default function CatchAll(props) {
+  const router = useRouter();
+  const [DynamicComponent, setDynamicComponent] = useState(null);
+
+  const getDynamicComponent = path =>
+    React.lazy(async () => {
+      const { remote, mod } = await getMatchedPage(path);
+      return getRemoteModule(remote, mod);
+    });
+
+  useEffect(() => {
+    setDynamicComponent(getDynamicComponent(router.asPath));
+  }, [router.asPath]);
+
+  return (
+    <>
+      <React.Suspense fallback={'Loading...'}>
+        {DynamicComponent && <DynamicComponent {...props} />}
+      </React.Suspense>
+    </>
+  );
+}
+
+export async function getServerSideProps(ctx) {
+  const { remote, mod } = await getMatchedPage(ctx.resolvedUrl);
+  const FedPage = await getRemoteModule(remote, mod);
+
+  if (!FedPage) {
+    return {
+      notFound: true
+    };
+  }
+
+  if (FedPage.getServerSideProps) {
+    return await FedPage.getServerSideProps(ctx);
+  }
+}
