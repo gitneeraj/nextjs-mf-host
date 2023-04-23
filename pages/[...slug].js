@@ -56,4 +56,8 @@ export async function getServerSideProps(ctx) {
   if (FedPage.getServerSideProps) {
     return await FedPage.getServerSideProps(ctx);
   }
+
+  return {
+    props: {}
+  };
 }
